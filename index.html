@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>外贸发票模板生成器 | 大肝出海</title>
+    <!-- 引入必要库 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            padding: 30px 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1.2fr;
+            gap: 20px;
+        }
+
+        /* 输入区域样式 - 美化升级 */
+        .input-section {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+        }
+
+        .input-section h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3498db;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #34495e;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group textarea, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background-color: #fafafa;
+        }
+
+        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            background-color: white;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+            line-height: 1.5;
+        }
+
+        /* 简化商品输入区域 - 优化排版 */
+        .item-input-row {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .item-input-row .form-group {
+            margin-bottom: 0;
+        }
+
+        /* 按钮样式美化 */
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 14px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(52, 152, 219, 0.2);
+        }
+
+        .btn:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(52, 152, 219, 0.3);
+        }
+
+        .btn-secondary {
+            background-color: #2ecc71;
+            margin-top: 8px;
+            box-shadow: 0 2px 5px rgba(46, 204, 113, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background-color: #27ae60;
+            box-shadow: 0 4px 8px rgba(46, 204, 113, 0.3);
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            margin-top: 8px;
+            box-shadow: 0 2px 5px rgba(231, 76, 60, 0.2);
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+        }
+
+        .btn-edit {
+            background-color: #f39c12;
+            margin-top: 8px;
+            box-shadow: 0 2px 5px rgba(231, 163, 60, 0.2);
+        }
+
+        .btn-edit:hover {
+            background-color: #e67e22;
+            box-shadow: 0 2px 5px rgba(231, 163, 60, 0.3);
+        }
+
+        /* 导出按钮组样式优化 */
+        .export-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn-image {
+            background-color: #9b59b6;
+            box-shadow: 0 2px 5px rgba(155, 89, 182, 0.2);
+        }
+
+        .btn-image:hover {
+            background-color: #8e44ad;
+            box-shadow: 0 4px 8px rgba(155, 89, 182, 0.3);
+        }
+
+        /* 商品列表样式（美化升级版） */
+        .items-manager {
+            margin: 25px 0;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .items-header {
+            background-color: #f8f9fa;
+            padding: 15px 20px;
+            display: flex;
+            font-weight: 600;
+            border-bottom: 1px solid #eee;
+            color: #2c3e50;
+            font-size: 14px;
+        }
+
+        .items-header span {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .items-header span:last-child {
+            flex: 0.5;
+            text-align: right;
+        }
+
+        .items-list {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .item-row {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background-color 0.2s;
+        }
+
+        .item-row:hover {
+            background-color: #fafafa;
+        }
+
+        .item-row:last-child {
+            border-bottom: none;
+        }
+
+        .item-row span {
+            flex: 1;
+            margin: 0 5px;
+            font-size: 14px;
+            color: #34495e;
+        }
+
+        .item-actions {
+            flex: 0.5;
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* 发票预览/打印区域样式 - 重点优化 */
+        .invoice-section {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border: 1px solid #f0f0f0;
+        }
+
+        .invoice-section h2 {
+            color: #2c3e50;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 3px solid #3498db;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        /* 核心修复：预览区域防止溢出 + 移除外围边框 */
+        #invoice-preview {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px; 
+            border: none !important; /* 移除最外围边框 */
+            border-radius: 0 !important; /* 移除圆角 */
+            background-color: white !important;
+            position: relative;
+            z-index: 1;
+            font-size: 14px;
+            line-height: 1.6;
+            box-shadow: none !important; /* 移除阴影 */
+            max-height: none;
+            overflow: visible;
+        }
+
+        /* 核心修改：INVOICE标题与发票编号、日期同一行 */
+        .invoice-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 35px;
+            width: 100%;
+        }
+
+        .invoice-logo {
+            flex: 1;
+        }
+
+        .invoice-logo h1 {
+            color: #2c3e50;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .invoice-number {
+            flex: 1;
+            text-align: right;
+            margin: 0;
+        }
+
+        .invoice-number h2 {
+            color: #3498db;
+            font-size: 24px;
+            margin-bottom: 8px;
+            border: none;
+            padding: 0;
+        }
+
+        .invoice-number p {
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        /* 核心修改：强制商家/客户信息同一行显示（所有屏幕尺寸） */
+        .invoice-info {
+            display: flex !important;
+            justify-content: space-between !important;
+            margin-bottom: 35px;
+            gap: 20px;
+            width: 100%;
+            flex-direction: row !important; /* 强制横向排列 */
+            flex-wrap: nowrap !important; /* 禁止换行 */
+        }
+
+        .from-info, .bill-to-info {
+            width: 50% !important; /* 严格50%宽度 */
+            padding: 0 10px !important;
+            margin-bottom: 0 !important; /* 取消移动端的margin-bottom */
+            float: left !important; /* 强制左浮动 */
+        }
+
+        .invoice-info h3 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 18px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .invoice-info p {
+            line-height: 1.7;
+            color: #555;
+            margin-bottom: 6px;
+            font-size: 14px;
+        }
+
+        /* 修复：商品表格列对齐 */
+        .invoice-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .invoice-table th, .invoice-table td {
+            padding: 14px 12px;
+            text-align: center !important; /* 图片版表格所有列居中 */
+            border-bottom: 1px solid #eee;
+        }
+
+        .invoice-table th {
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            font-weight: 600;
+            border-top: 2px solid #3498db;
+        }
+
+        .invoice-table tr:last-child td {
+            border-bottom: 2px solid #3498db;
+        }
+
+        /* 核心修改：金额总计偏右对齐（缩进65%） */
+        .invoice-total {
+            text-align: right;
+            margin-left: 65%; /* 向右缩进65% */
+            width: 35% !important; /* 宽度调整为35% */
+            margin-top: 20px;
+            margin-right: 0;
+        }
+
+        .invoice-total div {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .invoice-total .grand-total {
+            font-weight: 700;
+            font-size: 18px;
+            color: #2c3e50;
+            border-top: 3px solid #3498db;
+            border-bottom: none;
+            margin-top: 10px;
+            padding-top: 15px;
+            padding-bottom: 0;
+        }
+
+        /* 付款信息样式优化 */
+        .payment-info {
+            margin: 25px 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+        }
+
+        .payment-info p {
+            line-height: 1.8;
+            color: #34495e;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .payment-info strong {
+            color: #2c3e50;
+            font-weight: 700;
+            min-width: 120px;
+            display: inline-block;
+        }
+
+        .notes-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            border-left: 4px solid #f39c12;
+        }
+
+        .notes-section h4 {
+            color: #2c3e50;
+            margin-bottom: 12px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .notes-section p {
+            line-height: 1.7;
+            color: #555;
+            font-size: 14px;
+        }
+
+        /* 移除底部的发票模板文字 */
+        .invoice-footer {
+            display: none !important;
+        }
+
+        /* 响应式适配优化 - 强制商家/客户信息保持同一行 */
+        @media (max-width: 992px) {
+            .container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+            .invoice-header {
+                flex-direction: row !important; /* 移动端也保持同一行 */
+                align-items: center;
+            }
+            .invoice-number {
+                text-align: right;
+                margin-top: 0;
+                width: auto;
+            }
+            .invoice-total {
+                margin-left: 65% !important; /* 移动端保持65%缩进 */
+                width: 35% !important;
+            }
+            .item-input-row {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            .export-buttons {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            #invoice-preview {
+                padding: 20px; 
+                width: 100%;
+                overflow-x: auto; 
+            }
+            /* 强制保持商家/客户信息左右排版（关键修改） */
+            .invoice-info {
+                flex-wrap: nowrap !important;
+                width: 100%;
+            }
+            .from-info, .bill-to-info {
+                width: 50% !important;
+                margin-bottom: 0 !important;
+                min-width: 200px; /* 最小宽度保证排版 */
+            }
+        }
+
+        /* 滚动条美化 */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 输入区域（中文Label） -->
+        <div class="input-section">
+            <h2>发票信息填写</h2>
+            
+            <!-- 基础信息 -->
+            <div class="form-group">
+                <label>发票编号</label>
+                <input type="text" id="invoice-number" placeholder="例如：INV-2024-001" oninput="updateInvoice()" value="INV-2024-001">
+            </div>
+
+            <div class="form-group">
+                <label>发票日期</label>
+                <input type="date" id="invoice-date" oninput="updateInvoice()">
+            </div>
+
+            <div class="form-group">
+                <label>付款截止日期</label>
+                <input type="date" id="due-date" oninput="updateInvoice()">
+            </div>
+
+            <div class="form-group">
+                <label>货币类型</label>
+                <select id="currency-type" onchange="updateInvoice()">
+                    <option value="USD">$ 美元 (USD)</option>
+                    <option value="EUR">€ 欧元 (EUR)</option>
+                    <option value="GBP">£ 英镑 (GBP)</option>
+                    <option value="CNY">¥ 人民币 (CNY)</option>
+                    <option value="JPY">¥ 日元 (JPY)</option>
+                </select>
+            </div>
+
+            <!-- 商家信息 -->
+            <div class="form-group">
+                <label>商家名称</label>
+                <input type="text" id="seller-name" placeholder="例如：Your Company Name" oninput="updateInvoice()" value="Your Company Name">
+            </div>
+            <div class="form-group">
+                <label>商家地址</label>
+                <textarea id="seller-address" placeholder="例如：123 Business St, City, Country" oninput="updateInvoice()">Your Address Line 1
+Your City, State, ZIP
+Country</textarea>
+            </div>
+            <div class="form-group">
+                <label>商家邮箱</label>
+                <input type="email" id="seller-email" placeholder="例如：info@yourcompany.com" oninput="updateInvoice()">
+            </div>
+            <div class="form-group">
+                <label>商家电话</label>
+                <input type="text" id="seller-phone" placeholder="例如：+1 (123) 456-7890" oninput="updateInvoice()">
+            </div>
+            <div class="form-group">
+                <label>商家税号</label>
+                <input type="text" id="seller-taxid" placeholder="例如：TAX-123456789" oninput="updateInvoice()">
+            </div>
+
+            <!-- 客户信息 -->
+            <div class="form-group">
+                <label>客户名称</label>
+                <input type="text" id="client-name" placeholder="例如：ABC Company" oninput="updateInvoice()" value="ABC Company">
+            </div>
+            <div class="form-group">
+                <label>客户地址</label>
+                <textarea id="client-address" placeholder="例如：123 Main St, New York, NY 10001" oninput="updateInvoice()">123 Main St, New York, NY 10001</textarea>
+            </div>
+            <div class="form-group">
+                <label>客户邮箱</label>
+                <input type="email" id="client-email" placeholder="例如：contact@abccompany.com" oninput="updateInvoice()">
+            </div>
+            <div class="form-group">
+                <label>客户电话</label>
+                <input type="text" id="client-phone" placeholder="例如：+1 (987) 654-3210" oninput="updateInvoice()">
+            </div>
+            <div class="form-group">
+                <label>客户税号</label>
+                <input type="text" id="client-taxid" placeholder="例如：TAX-987654321" oninput="updateInvoice()">
+            </div>
+
+            <!-- 简化的商品输入区域 -->
+            <h3 style="margin: 25px 0 15px 0; color: #2c3e50; font-size: 18px; font-weight: 600;">商品/服务信息</h3>
+            <div class="item-input-row">
+                <div class="form-group">
+                    <label>商品名称</label>
+                    <input type="text" id="item-name" placeholder="例如：Web Development" value="Web Development Service">
+                </div>
+                <div class="form-group">
+                    <label>数量</label>
+                    <input type="number" id="item-qty" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>单价</label>
+                    <input type="number" id="item-price" value="100" min="0" step="0.01">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>商品描述（选填）</label>
+                <input type="text" id="item-desc" placeholder="例如：Monthly maintenance" value="Monthly maintenance">
+            </div>
+
+            <button class="btn btn-secondary" onclick="addItem()">添加商品/服务</button>
+            
+            <!-- 商品列表 -->
+            <div class="items-manager">
+                <div class="items-header">
+                    <span>商品名称</span>
+                    <span>数量</span>
+                    <span>单价</span>
+                    <span>操作</span>
+                </div>
+                <div class="items-list" id="items-list">
+                    <!-- 动态生成商品列表 -->
+                </div>
+            </div>
+
+            <!-- 税率设置 -->
+            <div class="form-group">
+                <label>税率（%）</label>
+                <input type="number" id="tax-rate" value="8" min="0" step="0.01" oninput="updateInvoice()">
+            </div>
+
+            <!-- 付款信息（默认英文） -->
+            <div class="form-group">
+                <label>付款信息（英文）</label>
+                <textarea id="payment-info" placeholder="例如：Bank Account: XXX-XXXX-XXXX" oninput="updateInvoice()">Bank Account: 1234-5678-9012
+Payment Method: Wire Transfer
+Beneficiary: Your Company Name
+SWIFT Code: ABCDEFG123
+IBAN: XX12 3456 7890 1234 5678 90</textarea>
+            </div>
+
+            <!-- 备注信息 -->
+            <div class="form-group">
+                <label>备注信息</label>
+                <textarea id="notes-info" placeholder="例如：Thank you for your business!" oninput="updateInvoice()">Thank you for your business!
+Payment terms: Please pay by the due date. Late payments may incur fees.</textarea>
+            </div>
+
+            <!-- 双导出按钮 -->
+            <div class="export-buttons">
+                <button class="btn" onclick="generateEditablePDF()">导出可编辑PDF</button>
+                <button class="btn btn-image" onclick="generateImagePDF()">导出图片版PDF</button>
+            </div>
+        </div>
+
+        <!-- 发票预览区域 -->
+        <div class="invoice-section">
+            <h2>发票预览 | Invoice Preview</h2>
+            <div id="invoice-preview">
+                <div class="invoice-header">
+                    <div class="invoice-logo">
+                        <h1>INVOICE</h1>
+                    </div>
+                    <div class="invoice-number">
+                        <h2 id="preview-invoice-number">INV-2024-001</h2>
+                        <p id="preview-invoice-date">Date: 2024-03-18</p>
+                        <p id="preview-due-date">Due Date: 2024-04-18</p>
+                    </div>
+                </div>
+
+                <div class="invoice-info">
+                    <div class="from-info">
+                        <h3>FROM</h3>
+                        <div id="preview-seller-info">
+                            <!-- 动态生成商家信息 -->
+                        </div>
+                    </div>
+                    <div class="bill-to-info">
+                        <h3>BILL TO</h3>
+                        <div id="preview-client-info">
+                            <!-- 动态生成客户信息 -->
+                        </div>
+                    </div>
+                </div>
+
+                <table class="invoice-table" id="preview-items-table">
+                    <thead>
+                        <tr>
+                            <th>DESCRIPTION</th>
+                            <th>QTY</th>
+                            <th>UNIT PRICE</th>
+                            <th>SUBTOTAL</th>
+                        </tr>
+                    </thead>
+                    <tbody id="preview-items-body">
+                        <!-- 动态生成商品行 -->
+                    </tbody>
+                </table>
+
+                <div class="invoice-total" id="preview-total-section">
+                    <div>
+                        <span>Subtotal</span>
+                        <span id="preview-total-subtotal">$100.00</span>
+                    </div>
+                    <div>
+                        <span>Tax (8%)</span>
+                        <span id="preview-tax-amount">$8.00</span>
+                    </div>
+                    <div class="grand-total">
+                        <span>Total</span>
+                        <span id="preview-grand-total">$108.00</span>
+                    </div>
+                </div>
+
+                <div class="payment-info" id="preview-payment-info">
+                    <p><strong>Bank Account:</strong> 1234-5678-9012</p>
+                    <p><strong>Payment Method:</strong> Wire Transfer</p>
+                    <p><strong>Beneficiary:</strong> Your Company Name</p>
+                    <p><strong>SWIFT Code:</strong> ABCDEFG123</p>
+                    <p><strong>IBAN:</strong> XX12 3456 7890 1234 5678 90</p>
+                </div>
+
+                <div class="notes-section">
+                    <h4>NOTES</h4>
+                    <p id="preview-notes-info">Thank you for your business!
+Payment terms: Please pay by the due date. Late payments may incur fees.</p>
+                </div>
+
+                <!-- 移除底部的发票模板文字 -->
+                <div class="invoice-footer">
+                    <p>Invoice Template</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全局商品列表
+        let itemsList = [
+            { name: "Web Development Service", desc: "Monthly maintenance", qty: 1, price: 100 }
+        ];
+        let editingIndex = -1; // 当前编辑的商品索引
+        
+        // 货币符号映射
+        const currencySymbols = {
+            USD: "$",
+            EUR: "€",
+            GBP: "£",
+            CNY: "¥",
+            JPY: "¥"
+        };
+
+        // 初始化
+        function initInvoice() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('invoice-date').value = today;
+            
+            // 默认截止日期30天后
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 30);
+            document.getElementById('due-date').value = dueDate.toISOString().split('T')[0];
+            
+            renderItemsList();
+            updateInvoice();
+        }
+
+        // 添加/编辑商品
+        function addItem() {
+            const itemName = document.getElementById('item-name').value.trim() || "Unnamed Item";
+            const itemDesc = document.getElementById('item-desc').value.trim() || "";
+            const itemQty = parseFloat(document.getElementById('item-qty').value) || 1;
+            const itemPrice = parseFloat(document.getElementById('item-price').value) || 0;
+
+            if (editingIndex >= 0) {
+                // 编辑模式
+                itemsList[editingIndex] = { name: itemName, desc: itemDesc, qty: itemQty, price: itemPrice };
+                editingIndex = -1;
+                document.querySelector('.btn-secondary').textContent = "添加商品/服务";
+            } else {
+                // 新增模式
+                itemsList.push({ name: itemName, desc: itemDesc, qty: itemQty, price: itemPrice });
+            }
+
+            renderItemsList();
+            updateInvoice();
+
+            // 清空输入框
+            document.getElementById('item-name').value = "";
+            document.getElementById('item-desc').value = "";
+            document.getElementById('item-qty').value = 1;
+            document.getElementById('item-price').value = 0;
+        }
+
+        // 编辑商品
+        function editItem(index) {
+            const item = itemsList[index];
+            document.getElementById('item-name').value = item.name;
+            document.getElementById('item-desc').value = item.desc;
+            document.getElementById('item-qty').value = item.qty;
+            document.getElementById('item-price').value = item.price;
+            
+            editingIndex = index;
+            document.querySelector('.btn-secondary').textContent = "保存修改";
+        }
+
+        // 删除商品
+        function deleteItem(index) {
+            if (confirm("确定要删除该商品吗？")) {
+                itemsList.splice(index, 1);
+                if (index === editingIndex) {
+                    editingIndex = -1;
+                    document.querySelector('.btn-secondary').textContent = "添加商品/服务";
+                }
+                renderItemsList();
+                updateInvoice();
+            }
+        }
+
+        // 渲染商品列表
+        function renderItemsList() {
+            const itemsListEl = document.getElementById('items-list');
+            itemsListEl.innerHTML = "";
+
+            itemsList.forEach((item, index) => {
+                const itemRow = document.createElement('div');
+                itemRow.className = 'item-row';
+                itemRow.innerHTML = `
+                    <span>${item.name}</span>
+                    <span>${item.qty}</span>
+                    <span>${getCurrencySymbol()}${item.price.toFixed(2)}</span>
+                    <div class="item-actions">
+                        <button class="btn btn-edit" onclick="editItem(${index})">编辑</button>
+                        <button class="btn btn-danger" onclick="deleteItem(${index})">删除</button>
+                    </div>
+                `;
+                itemsListEl.appendChild(itemRow);
+            });
+        }
+
+        // 获取货币符号
+        function getCurrencySymbol() {
+            const currencyType = document.getElementById('currency-type').value;
+            return currencySymbols[currencyType] || "$";
+        }
+
+        // 构建联系人信息（空值不显示）
+        function buildContactHtml(name, address, email, phone, taxid) {
+            let html = `<p>${name}</p>`;
+            html += `<p>${address}</p>`;
+            
+            if (email) html += `<p>Email: ${email}</p>`;
+            if (phone) html += `<p>Phone: ${phone}</p>`;
+            if (taxid) html += `<p>Tax ID: ${taxid}</p>`;
+            
+            return html;
+        }
+
+        // 更新发票预览
+        function updateInvoice() {
+            // 基础信息
+            const invoiceNumber = document.getElementById('invoice-number').value || 'INV-2024-001';
+            const invoiceDate = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
+            const dueDate = document.getElementById('due-date').value || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0];
+            const currencySymbol = getCurrencySymbol();
+            
+            // 商家信息
+            const sellerName = document.getElementById('seller-name').value || 'Your Company Name';
+            const sellerAddress = document.getElementById('seller-address').value || 'Your Address';
+            const sellerEmail = document.getElementById('seller-email').value;
+            const sellerPhone = document.getElementById('seller-phone').value;
+            const sellerTaxId = document.getElementById('seller-taxid').value;
+            
+            // 客户信息
+            const clientName = document.getElementById('client-name').value || 'ABC Company';
+            const clientAddress = document.getElementById('client-address').value || '123 Main St, New York, NY 10001';
+            const clientEmail = document.getElementById('client-email').value;
+            const clientPhone = document.getElementById('client-phone').value;
+            const clientTaxId = document.getElementById('client-taxid').value;
+            
+            // 税率
+            const taxRate = parseFloat(document.getElementById('tax-rate').value) || 8;
+            
+            // 付款信息
+            const paymentInfo = document.getElementById('payment-info').value || 'No payment information provided';
+            
+            // 备注信息
+            const notesInfo = document.getElementById('notes-info').value || 'Thank you for your business!';
+
+            // 计算金额
+            let subtotal = 0;
+            const itemsBody = document.getElementById('preview-items-body');
+            itemsBody.innerHTML = "";
+
+            // 渲染商品表格
+            itemsList.forEach(item => {
+                const itemSubtotal = item.qty * item.price;
+                subtotal += itemSubtotal;
+
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name} ${item.desc ? '- ' + item.desc : ''}</td>
+                    <td>${item.qty}</td>
+                    <td>${currencySymbol}${item.price.toFixed(2)}</td>
+                    <td>${currencySymbol}${itemSubtotal.toFixed(2)}</td>
+                `;
+                itemsBody.appendChild(row);
+            });
+
+            // 计算税费和总计
+            const taxAmount = subtotal * (taxRate / 100);
+            const grandTotal = subtotal + taxAmount;
+
+            // 更新预览
+            document.getElementById('preview-invoice-number').textContent = invoiceNumber;
+            document.getElementById('preview-invoice-date').textContent = `Date: ${invoiceDate}`;
+            document.getElementById('preview-due-date').textContent = `Due Date: ${dueDate}`;
+            
+            // 商家/客户信息
+            document.getElementById('preview-seller-info').innerHTML = buildContactHtml(
+                sellerName, sellerAddress, sellerEmail, sellerPhone, sellerTaxId
+            );
+            document.getElementById('preview-client-info').innerHTML = buildContactHtml(
+                clientName, clientAddress, clientEmail, clientPhone, clientTaxId
+            );
+
+            // 金额预览
+            document.getElementById('preview-total-subtotal').textContent = `${currencySymbol}${subtotal.toFixed(2)}`;
+            document.getElementById('preview-tax-amount').textContent = `${currencySymbol}${taxAmount.toFixed(2)} (${taxRate}%)`;
+            document.getElementById('preview-grand-total').textContent = `${currencySymbol}${grandTotal.toFixed(2)}`;
+
+            // 付款信息（加粗处理）
+            const paymentInfoEl = document.getElementById('preview-payment-info');
+            const paymentLines = paymentInfo.split('\n').filter(line => line.trim());
+            paymentInfoEl.innerHTML = paymentLines.map(line => {
+                const colonIndex = line.indexOf(':');
+                if (colonIndex > 0) {
+                    const label = line.substring(0, colonIndex + 1);
+                    const value = line.substring(colonIndex + 1);
+                    return `<p><strong>${label}</strong>${value}</p>`;
+                }
+                return `<p>${line}</p>`;
+            }).join('');
+
+            // 备注信息
+            document.getElementById('preview-notes-info').textContent = notesInfo;
+        }
+
+        // 优化版：生成可编辑PDF（商品表格所有列居中）
+        function generateEditablePDF() {
+            // 引入jsPDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF({
+                unit: 'mm',
+                format: 'a4',
+                orientation: 'portrait'
+            });
+
+            // 获取当前表单数据
+            const invoiceNumber = document.getElementById('invoice-number').value || 'INV-2024-001';
+            const invoiceDate = document.getElementById('invoice-date').value || new Date().toISOString().split('T')[0];
+            const dueDate = document.getElementById('due-date').value || new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0];
+            const currencySymbol = getCurrencySymbol();
+            
+            // 商家信息
+            const sellerName = document.getElementById('seller-name').value || 'Your Company Name';
+            const sellerAddress = document.getElementById('seller-address').value || 'Your Address';
+            const sellerEmail = document.getElementById('seller-email').value || '';
+            const sellerPhone = document.getElementById('seller-phone').value || '';
+            const sellerTaxId = document.getElementById('seller-taxid').value || '';
+            
+            // 客户信息
+            const clientName = document.getElementById('client-name').value || 'ABC Company';
+            const clientAddress = document.getElementById('client-address').value || '123 Main St, New York, NY 10001';
+            const clientEmail = document.getElementById('client-email').value || '';
+            const clientPhone = document.getElementById('client-phone').value || '';
+            const clientTaxId = document.getElementById('client-taxid').value || '';
+            
+            // 税率
+            const taxRate = parseFloat(document.getElementById('tax-rate').value) || 8;
+            
+            // 付款信息
+            const paymentInfo = document.getElementById('payment-info').value || 'No payment information provided';
+            
+            // 备注信息
+            const notesInfo = document.getElementById('notes-info').value || 'Thank you for your business!';
+
+            // 计算金额
+            let subtotal = 0;
+            const tableData = [];
+            itemsList.forEach(item => {
+                const itemSubtotal = item.qty * item.price;
+                subtotal += itemSubtotal;
+                tableData.push([
+                    `${item.name} ${item.desc ? '- ' + item.desc : ''}`,
+                    item.qty,
+                    `${currencySymbol}${item.price.toFixed(2)}`,
+                    `${currencySymbol}${itemSubtotal.toFixed(2)}`
+                ]);
+            });
+            const taxAmount = subtotal * (taxRate / 100);
+            const grandTotal = subtotal + taxAmount;
+
+            // ========== 优化排版 ==========
+            // 设置字体和样式
+            doc.setFont('Arial', 'normal');
+            doc.setFontSize(24);
+            doc.text('INVOICE', 105, 25, { align: 'center' });
+
+            // 发票编号和日期（优化位置和间距）
+            doc.setFontSize(14);
+            doc.text(`Invoice #: ${invoiceNumber}`, 20, 40);
+            doc.text(`Date: ${invoiceDate}`, 20, 50);
+            doc.text(`Due Date: ${dueDate}`, 20, 60);
+
+            // 商家信息（FROM - 严格50%宽度）
+            doc.setFontSize(16);
+            doc.text('FROM', 20, 75);
+            doc.setFontSize(10);
+            let yPos = 80;
+            
+            // 创建可编辑的商家名称字段（优化宽度）
+            doc.textWithLink(sellerName, 20, yPos, {
+                fieldName: 'seller_name',
+                fieldValue: sellerName,
+                fieldType: 'text',
+                rect: [20, yPos - 4, 90, 8] // 宽度调整为90mm（A4宽度210mm，左右各留10mm边距）
+            });
+            yPos += 10;
+
+            // 商家地址（优化行高）
+            const sellerAddressLines = sellerAddress.split('\n');
+            sellerAddressLines.forEach(line => {
+                if (line.trim()) {
+                    doc.textWithLink(line.trim(), 20, yPos, {
+                        fieldName: `seller_address_${yPos}`,
+                        fieldValue: line.trim(),
+                        fieldType: 'text',
+                        rect: [20, yPos - 4, 90, 8]
+                    });
+                    yPos += 8;
+                }
+            });
+
+            // 商家联系方式（优化间距）
+            if (sellerEmail) {
+                doc.textWithLink(`Email: ${sellerEmail}`, 20, yPos, {
+                    fieldName: 'seller_email',
+                    fieldValue: sellerEmail,
+                    fieldType: 'text',
+                    rect: [20, yPos - 4, 90, 8]
+                });
+                yPos += 8;
+            }
+            if (sellerPhone) {
+                doc.textWithLink(`Phone: ${sellerPhone}`, 20, yPos, {
+                    fieldName: 'seller_phone',
+                    fieldValue: sellerPhone,
+                    fieldType: 'text',
+                    rect: [20, yPos - 4, 90, 8]
+                });
+                yPos += 8;
+            }
+            if (sellerTaxId) {
+                doc.textWithLink(`Tax ID: ${sellerTaxId}`, 20, yPos, {
+                    fieldName: 'seller_taxid',
+                    fieldValue: sellerTaxId,
+                    fieldType: 'text',
+                    rect: [20, yPos - 4, 90, 8]
+                });
+                yPos += 10;
+            }
+
+            // 客户信息（BILL TO - 严格50%宽度，起始位置110mm）
+            doc.setFontSize(16);
+            doc.text('BILL TO', 110, 75); // 从110mm开始（20+90+10边距）
+            doc.setFontSize(10);
+            let billToY = 80;
+            
+            // 客户名称（优化宽度）
+            doc.textWithLink(clientName, 110, billToY, {
+                fieldName: 'client_name',
+                fieldValue: clientName,
+                fieldType: 'text',
+                rect: [110, billToY - 4, 90, 8] // 同样90mm宽度
+            });
+            billToY += 10;
+
+            // 客户地址（优化行高）
+            const clientAddressLines = clientAddress.split('\n');
+            clientAddressLines.forEach(line => {
+                if (line.trim()) {
+                    doc.textWithLink(line.trim(), 110, billToY, {
+                        fieldName: `client_address_${billToY}`,
+                        fieldValue: line.trim(),
+                        fieldType: 'text',
+                        rect: [110, billToY - 4, 90, 8]
+                    });
+                    billToY += 8;
+                }
+            });
+
+            // 客户联系方式（优化间距）
+            if (clientEmail) {
+                doc.textWithLink(`Email: ${clientEmail}`, 110, billToY, {
+                    fieldName: 'client_email',
+                    fieldValue: clientEmail,
+                    fieldType: 'text',
+                    rect: [110, billToY - 4, 90, 8]
+                });
+                billToY += 8;
+            }
+            if (clientPhone) {
+                doc.textWithLink(`Phone: ${clientPhone}`, 110, billToY, {
+                    fieldName: 'client_phone',
+                    fieldValue: clientPhone,
+                    fieldType: 'text',
+                    rect: [110, billToY - 4, 90, 8]
+                });
+                billToY += 8;
+            }
+            if (clientTaxId) {
+                doc.textWithLink(`Tax ID: ${clientTaxId}`, 110, billToY, {
+                    fieldName: 'client_taxid',
+                    fieldValue: clientTaxId,
+                    fieldType: 'text',
+                    rect: [110, billToY - 4, 90, 8]
+                });
+                billToY += 10;
+            }
+
+            // 商品表格（核心修改：所有列居中对齐，100%宽度占满）
+            const startY = Math.max(yPos, billToY) + 10;
+            doc.autoTable({
+                head: [['DESCRIPTION', 'QTY', 'UNIT PRICE', 'SUBTOTAL']],
+                body: tableData,
+                startY: startY,
+                theme: 'striped',
+                margin: { left: 10, right: 10 }, // 左右边距各10mm，100%占满A4宽度
+                styles: {
+                    fontSize: 10,
+                    cellPadding: 6,
+                    overflow: 'linebreak',
+                    halign: 'center' // 所有列居中对齐
+                },
+                headStyles: {
+                    fillColor: [52, 152, 219],
+                    textColor: [255, 255, 255],
+                    fontStyle: 'bold',
+                    cellWidth: 'auto'
+                },
+                bodyStyles: {
+                    cellWidth: 'auto'
+                },
+                columnStyles: {
+                    0: { cellWidth: 'wrap', halign: 'center' },  // 描述列居中
+                    1: { cellWidth: 'auto', halign: 'center' }, // 数量列居中
+                    2: { cellWidth: 'auto', halign: 'center' }, // 单价列居中
+                    3: { cellWidth: 'auto', halign: 'center' }  // 小计列居中
+                },
+                // 新增：表格边框100%占满
+                tableWidth: '100%',
+                showHead: 'everyPage',
+                showFoot: 'never'
+            });
+
+            // 金额总计（优化位置和对齐 - 缩进65%）
+            const totalY = doc.lastAutoTable.finalY + 10;
+            const totalStartX = 136.5; // A4宽度210mm，65%缩进 = 210*0.65 = 136.5mm
+            
+            doc.setFontSize(12);
+            doc.text('Subtotal:', totalStartX, totalY);
+            doc.textWithLink(`${currencySymbol}${subtotal.toFixed(2)}`, totalStartX + 20, totalY, {
+                fieldName: 'subtotal',
+                fieldValue: `${currencySymbol}${subtotal.toFixed(2)}`,
+                fieldType: 'text',
+                rect: [totalStartX + 20, totalY - 4, 40, 8]
+            });
+
+            doc.text(`Tax (${taxRate}%):`, totalStartX, totalY + 10);
+            doc.textWithLink(`${currencySymbol}${taxAmount.toFixed(2)}`, totalStartX + 20, totalY + 10, {
+                fieldName: 'tax_amount',
+                fieldValue: `${currencySymbol}${taxAmount.toFixed(2)}`,
+                fieldType: 'text',
+                rect: [totalStartX + 20, totalY + 6, 40, 8]
+            });
+
+            doc.setFontSize(14);
+            doc.setFont('Arial', 'bold');
+            doc.text('Total:', totalStartX, totalY + 25);
+            doc.textWithLink(`${currencySymbol}${grandTotal.toFixed(2)}`, totalStartX + 20, totalY + 25, {
+                fieldName: 'grand_total',
+                fieldValue: `${currencySymbol}${grandTotal.toFixed(2)}`,
+                fieldType: 'text',
+                rect: [totalStartX + 20, totalY + 21, 40, 10]
+            });
+            doc.setFont('Arial', 'normal');
+
+            // 付款信息（优化位置和宽度）
+            const paymentY = totalY + 40;
+            doc.setFontSize(14);
+            doc.text('PAYMENT INFORMATION', 20, paymentY);
+            doc.setFontSize(10);
+            
+            const paymentLines = paymentInfo.split('\n').filter(line => line.trim());
+            let paymentLineY = paymentY + 8;
+            paymentLines.forEach((line, idx) => {
+                doc.textWithLink(line, 20, paymentLineY, {
+                    fieldName: `payment_info_${idx}`,
+                    fieldValue: line,
+                    fieldType: 'text',
+                    rect: [20, paymentLineY - 4, 180, 8]
+                });
+                paymentLineY += 8;
+            });
+
+            // 备注信息（优化位置）
+            const notesY = paymentLineY + 10;
+            doc.setFontSize(14);
+            doc.text('NOTES', 20, notesY);
+            doc.setFontSize(10);
+            
+            const notesLines = notesInfo.split('\n');
+            let notesLineY = notesY + 8;
+            notesLines.forEach((line, idx) => {
+                if (line.trim()) {
+                    doc.textWithLink(line, 20, notesLineY, {
+                        fieldName: `notes_info_${idx}`,
+                        fieldValue: line,
+                        fieldType: 'text',
+                        rect: [20, notesLineY - 4, 180, 8]
+                    });
+                    notesLineY += 8;
+                }
+            });
+
+            // 保存PDF（可编辑格式）
+            doc.save(`${invoiceNumber}_editable.pdf`);
+        }
+
+        // 核心优化：生成图片版PDF（商家/客户信息强制同一行）
+        function generateImagePDF() {
+            const invoicePreview = document.getElementById('invoice-preview');
+            const invoiceNumber = document.getElementById('invoice-number').value || 'INV-2024-001';
+            
+            // 显示加载提示
+            alert('正在生成图片版PDF，请稍候...');
+            
+            // 临时调整预览区域样式，确保完整截取
+            const originalStyle = {
+                width: invoicePreview.style.width,
+                maxWidth: invoicePreview.style.maxWidth,
+                padding: invoicePreview.style.padding
+            };
+            
+            // 临时设置为A4宽度（210mm ≈ 794px），减少内边距
+            invoicePreview.style.width = '794px';
+            invoicePreview.style.maxWidth = 'none';
+            invoicePreview.style.padding = '15px';
+            
+            // 使用html2canvas将预览区域转为图片（核心优化参数）
+            html2canvas(invoicePreview, {
+                scale: 2, // 提高清晰度但控制缩放
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#ffffff',
+                allowTaint: true,
+                letterRendering: true, // 优化文字渲染
+                scrollX: 0,
+                scrollY: 0,
+                windowWidth: 794, // 固定A4宽度
+                windowHeight: invoicePreview.offsetHeight + 100 // 增加高度余量
+            }).then(canvas => {
+                // 恢复原始样式
+                invoicePreview.style.width = originalStyle.width;
+                invoicePreview.style.maxWidth = originalStyle.maxWidth;
+                invoicePreview.style.padding = originalStyle.padding;
+                
+                // 转换为图片数据
+                const imgData = canvas.toDataURL('image/png');
+                
+                // 创建PDF文档
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF({
+                    unit: 'mm',
+                    format: 'a4',
+                    orientation: 'portrait'
+                });
+                
+                // 核心修改：图片向下移10px（原偏移 -30 +10 = -20）
+                const pdfWidth = doc.internal.pageSize.getWidth();
+                const pdfHeight = doc.internal.pageSize.getHeight();
+                const imgWidth = pdfWidth - 10; // 左右各留5mm边距
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                
+                // 计算Y轴偏移：向下移10px（原-30改为-20）
+                let yOffset = (pdfHeight - imgHeight) / 2 - 20;
+                // 确保不会超出顶部
+                yOffset = Math.max(yOffset, 0);
+                
+                // 如果图片高度超过A4高度，自动分页
+                if (imgHeight > pdfHeight) {
+                    // 第一页（向下移10px）
+                    doc.addImage(imgData, 'PNG', 5, yOffset, imgWidth, pdfHeight);
+                    // 第二页
+                    doc.addPage();
+                    doc.addImage(imgData, 'PNG', 5, -pdfHeight + yOffset, imgWidth, imgHeight);
+                } else {
+                    // 向下移10px显示
+                    doc.addImage(imgData, 'PNG', 5, yOffset, imgWidth, imgHeight);
+                }
+                
+                // 保存PDF
+                doc.save(`${invoiceNumber}_image.pdf`);
+                
+                // 提示完成
+                alert('图片版PDF生成完成！');
+            }).catch(error => {
+                // 恢复原始样式
+                invoicePreview.style.width = originalStyle.width;
+                invoicePreview.style.maxWidth = originalStyle.maxWidth;
+                invoicePreview.style.padding = originalStyle.padding;
+                
+                console.error('生成图片PDF失败:', error);
+                alert('生成失败，请重试！');
+            });
+        }
+
+        // 页面加载初始化
+        window.onload = initInvoice;
+    </script>
+</body>
+</html>
